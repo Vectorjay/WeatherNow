@@ -10,7 +10,7 @@ workflows:
 
     environment:
       ios_signing:
-        distribution_type: app_store        # Change to 'ad_hoc' for testing
+        distribution_type: ad_hoc        # Change to 'ad_hoc' for testing
         bundle_identifier: com.yourcompany.weathernow  # ← Change this to your bundle ID
       vars:
         BUNDLE_ID: "com.yourcompany.weathernow"         # ← Change this
