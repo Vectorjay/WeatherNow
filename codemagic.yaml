@@ -10,10 +10,10 @@ workflows:
 
     environment:
       ios_signing:
-        distribution_type: ad_hoc        # Change to 'ad_hoc' for testing
+        distribution_type: app_store       # Change to 'ad_hoc' for testing
         bundle_identifier: com.yourcompany.weathernow  # ← Change this to your bundle ID
-        groups:
-          - weather_credentials 
+      groups:
+        - weather_credentials 
       vars:
         BUNDLE_ID: "com.yourcompany.weathernow"         # ← Change this
         XCODE_WORKSPACE: "WeatherNow.xcworkspace"
