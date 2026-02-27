@@ -12,11 +12,13 @@ workflows:
       ios_signing:
         distribution_type: ad_hoc        # Change to 'ad_hoc' for testing
         bundle_identifier: com.yourcompany.weathernow  # ← Change this to your bundle ID
+        groups:
+          - weather_credentials 
       vars:
         BUNDLE_ID: "com.yourcompany.weathernow"         # ← Change this
         XCODE_WORKSPACE: "WeatherNow.xcworkspace"
         XCODE_SCHEME: "WeatherNow"
-        OPENWEATHER_API_KEY: Encrypted(d8b1069f35fa5de561d451c689a8a598)              # ← Add your encrypted API key
+        OPENWEATHER_API_KEY: $OPENWEATHER_API_KEY             # ← Add your encrypted API key
       node: 18.18.0
       xcode: latest
       cocoapods: default
