@@ -1,0 +1,122 @@
+# codemagic.yaml
+# WeatherNow - React Native App
+# Builds for iOS (App Store) and Android (Play Store)
+
+workflows:
+  ios-release:
+    name: iOS App Store Release
+    max_build_duration: 120
+    instance_type: mac_mini_m1
+
+    environment:
+      ios_signing:
+        distribution_type: app_store        # Change to 'ad_hoc' for testing
+        bundle_identifier: com.yourcompany.weathernow  # ← Change this to your bundle ID
+      vars:
+        BUNDLE_ID: "com.yourcompany.weathernow"         # ← Change this
+        XCODE_WORKSPACE: "WeatherNow.xcworkspace"
+        XCODE_SCHEME: "WeatherNow"
+        OPENWEATHER_API_KEY: Encrypted(...)              # ← Add your encrypted API key
+      node: 18.18.0
+      xcode: latest
+      cocoapods: default
+
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+
+    scripts:
+      - name: Install Node dependencies
+        script: |
+          npm install
+
+      - name: Install CocoaPods
+        script: |
+          cd ios && pod install
+
+      - name: Set OpenWeather API Key
+        script: |
+          # Inject API key into the app at build time
+          sed -i '' "s/YOUR_API_KEY_HERE/$OPENWEATHER_API_KEY/g" src/utils/weatherApi.ts
+
+      - name: Set up code signing
+        script: |
+          xcode-project use-profiles
+
+      - name: Increment build number
+        script: |
+          cd ios
+          agvtool new-version -all $(($(app-store-connect get-latest-build-number "$BUNDLE_ID") + 1))
+
+      - name: Build iOS release
+        script: |
+          xcode-project build-ipa \
+            --workspace "ios/$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME" \
+            --config "Release"
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+
+    publishing:
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        submit_to_testflight: true     # Set to false if you don't want TestFlight
+        submit_to_app_store: false     # Set to true for direct App Store submission
+      email:
+        recipients:
+          - your@email.com             # ← Change to your email
+        notify:
+          success: true
+          failure: true
+
+  android-release:
+    name: Android Play Store Release
+    max_build_duration: 120
+    instance_type: linux_x2
+
+    environment:
+      android_signing:
+        - keystore_reference          # Set up in Codemagic dashboard
+      vars:
+        PACKAGE_NAME: "com.yourcompany.weathernow"   # ← Change this
+        OPENWEATHER_API_KEY: Encrypted(...)           # ← Add your encrypted API key
+      node: 18.18.0
+
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+
+    scripts:
+      - name: Install Node dependencies
+        script: |
+          npm install
+
+      - name: Set OpenWeather API Key
+        script: |
+          sed -i "s/YOUR_API_KEY_HERE/$OPENWEATHER_API_KEY/g" src/utils/weatherApi.ts
+
+      - name: Build Android release
+        script: |
+          cd android
+          ./gradlew bundleRelease
+
+    artifacts:
+      - android/app/build/outputs/**/*.aab
+      - android/app/build/outputs/**/*.apk
+
+    publishing:
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal               # Options: internal, alpha, beta, production
+        submit_as_draft: true
